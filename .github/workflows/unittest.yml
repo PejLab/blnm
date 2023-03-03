@@ -1,0 +1,43 @@
+# Workflow is a customization of the Python starter
+# workflow published in GitHub docs, 
+# https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+#
+# The aim is to perform unit test using distinct 
+# operating systems and Python versions
+#
+# By: Robert Vogel
+
+name: unit-tests
+
+run-name: ${{ github.actor }} running unit-tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  unit-tests:
+    strategy:
+      matrix: 
+        os: [ubuntu-latest, macos-11]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up ${{ matrix.os }} and Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies on ${{ matrix.os }}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy scipy
+      - name: Run unittest
+        run: |
+          python -m unittest

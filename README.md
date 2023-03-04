@@ -29,7 +29,7 @@ COEFS = [0.2, 0.1, 0.3, 0.4]
 MEANS = [-3, -1, 1, 3]
 VARIANCE = 0.25
 N_COUNTS = 100
-N_SAMPLES = 2500
+N_SAMPLES = 1000
 N_REPS = 10
 ```
 
@@ -113,8 +113,8 @@ ax.set_position(AX_POSITION)
 ax.set_xlabel("Alternative Counts", fontsize=FONTSIZE)
 ax.set_ylabel("Probability", fontsize=FONTSIZE)
 
-fig.savefig("pmf.pdf")
+fig.savefig("pmf.png")
 ```
 
-![pmf](example/pmf.pdf)
+![pmf](example/pmf.png)
 

@@ -132,7 +132,7 @@ def main():
     ax.set_xlabel("Alternative Counts", fontsize=FONTSIZE)
     ax.set_ylabel("Probability", fontsize=FONTSIZE)
     
-    fig.savefig("pmf.pdf")
+    fig.savefig("pmf.png")
     
     with open("sim_pars.json", "w") as fid:
         json.dump({

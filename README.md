@@ -113,8 +113,8 @@ ax.set_position(AX_POSITION)
 ax.set_xlabel("Alternative Counts", fontsize=FONTSIZE)
 ax.set_ylabel("Probability", fontsize=FONTSIZE)
 
-fig.savefig("pmf.pdf")
+fig.savefig("pmf.png")
 ```
 
-![pmf](example/pmf.pdf)
+![pmf](example/pmf.png)
 

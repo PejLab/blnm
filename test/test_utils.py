@@ -32,7 +32,7 @@ class TestMbic(TestCase):
                       self.k_mixtures)
 
     def test_output(self):
-        self.assertEqual(utils.mbic(np.nan, 1000, 3), np.nan)
+        self.assertTrue(np.isnan(utils.mbic(np.nan, 1000, 3)))
 
         self.assertEqual(utils.mbic(self.log_likelihood,
                                     self.n_samples,

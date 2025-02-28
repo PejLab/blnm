@@ -53,7 +53,7 @@ def _e_step(x_counts, n_counts,
         None
     """
 
-    rng = np.random.default_rng(seed=seed)
+    rng = np.random.default_rng(seed = seed)
 
     for k, coef_k in enumerate(coefs):
 

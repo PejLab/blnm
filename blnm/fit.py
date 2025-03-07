@@ -109,16 +109,22 @@ def _m_step(zeroth_order,
 
     return coefs, means, variance
 
-# return (coefs, means, variance)
 
-def blnm(x_counts, 
-         n_counts,
-         k_mixtures, 
-         seed=None,
-         tolerance=1e-6, 
-         max_iter=1000,
-         disp = True,
-         integral_n_samples = INTEGRAL_N_SAMPLES):
+def init_pars():
+    raise NotImplementedError
+
+
+def blnm(x_counts: np.ndarray, 
+         n_counts: np.ndarray,
+         k_mixtures: int, 
+         coefs: np.ndarray | None = None,
+         means: np.ndarray | None = None,
+         variance: float | None = None,
+         seed: int | np.random._generator.Generator = None,
+         tolerance:float = 1e-6, 
+         max_iter:int = 1000,
+         disp: bool = True,
+         integral_n_samples: int = INTEGRAL_N_SAMPLES) -> dict:
     """Fit mixture of BLN models.
 
     Args:
@@ -127,6 +133,17 @@ def blnm(x_counts,
         n_counts : ((N,) np.ndarray) alternative + reference allele 
             specific expression counts
         k_mixtures : (int) > 0 number of mixtures to fit
+        coefs: ((k_mixtures,) np.ndarray) 
+            The weights for each BLN probability mass funciton in the 
+            mixture.  Each coefficient must be greater than 0 and the
+            sum of coefficients be 1.  If None, pick coefficients randomly
+            subject to our contraints.
+        means: ((k_mixtures,) np.ndarray)
+            The mean parameter for each BLN probability mass function.
+            This can be any real number.  If None, pick coefficients randomly.
+        variance: (float)
+            A real number greater than zero representing the variance parameter
+            of each BLN probability mass function.
         seed : (any input to numpy random Generator object)
         tolerance : (float) criterion for convergence
         max_iter : (int) maximum number of interations
@@ -170,13 +187,39 @@ def blnm(x_counts,
     rng = np.random.default_rng(seed=seed)
 
     # initialize parameters
-    coefs = rng.uniform(low=0.1, high=0.9, size=k_mixtures)
-    coefs = coefs / np.sum(coefs)
+    if coefs is None:
+        coefs = rng.uniform(low=0.1, high=0.9, size=k_mixtures)
+        coefs = coefs / np.sum(coefs)
 
-    p = rng.uniform(low=0.01, high=0.99, size=k_mixtures)
-    means = np.log(p / (1-p))
+    # verify coefs
+    if (coefs < 0).any():
+        raise ValueError("All coefficients must be positive.")
+    elif (np.isnan(coefs)).any():
+        raise ValueError("All coefficients must be positive.")
+    elif (s := np.sum(coefs)) < 0.9999 or s > 1.0001:
+        raise ValueError("The sum of coefficients must be 1.")
+    elif coefs.size != k_mixtures:
+        raise ValueError("The number of coefficients must be"
+                        " equal to the number of k_mixtures.")
 
-    variance = rng.uniform(low=0.1, high=3)
+    if means is None:
+        p = rng.uniform(low=0.01, high=0.99, size=k_mixtures)
+        means = np.log(p / (1-p))
+
+    if means.size != k_mixtures:
+        raise ValueError("The number of means must be"
+                        " equal to the number of k_mixtures.")
+    elif (np.isnan(means)).any():
+        raise ValueError("The number of means must be"
+                        " equal to the number of k_mixtures.")
+
+
+    if variance is None:
+        variance = rng.uniform(low=0.1, high=3)
+
+    if variance <= 0 or np.isnan(variance):
+        raise ValueError("Variance parameter must be a float greater than zero.")
+
 
     # preallocate memory for arrays constructed in the E step
     # each array represents

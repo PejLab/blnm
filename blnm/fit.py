@@ -1,6 +1,8 @@
 """Fitting routines.
 """
 import numpy as np
+import numpy.typing as npt
+import typing
 
 from scipy.stats import binom
 from scipy import special as scisp
@@ -11,7 +13,7 @@ from . import dist
 INTEGRAL_N_SAMPLES = 1000
 
 
-def _data_log_likelihood(zeroth_order):
+def _data_log_likelihood(zeroth_order: npt.NDArray) -> float:
     """Compute the data log likelihood.
 
     Args:
@@ -22,13 +24,17 @@ def _data_log_likelihood(zeroth_order):
     """
     return np.sum(np.log(np.sum(zeroth_order, axis=0)))
 
-def _e_step(x_counts, n_counts, 
-            coefs, means, variance, k_mixtures,
-            zeroth_order,
-            first_order,
-            second_order,
-            integral_n_samples,
-            seed):
+def _e_step(x_counts: npt.NDArray,
+            n_counts: npt.NDArray, 
+            coefs: npt.NDArray,
+            means: npt.NDArray,
+            variance: float,
+            k_mixtures: int,
+            zeroth_order: npt.NDArray,
+            first_order: npt.NDArray,
+            second_order: npt.NDArray,
+            integral_n_samples: int,
+            seed: typing.Any) -> None:
     """E step of EM algorithm.
 
     Updates the conditional expectation for the zeroth, 
@@ -114,13 +120,13 @@ def init_pars():
     raise NotImplementedError
 
 
-def blnm(x_counts: np.ndarray, 
-         n_counts: np.ndarray,
+def blnm(x_counts: npt.NDArray, 
+         n_counts: npt.NDArray,
          k_mixtures: int, 
-         coefs: np.ndarray | None = None,
-         means: np.ndarray | None = None,
+         coefs: npt.NDArray | None = None,
+         means: npt.NDArray | None = None,
          variance: float | None = None,
-         seed: int | np.random._generator.Generator = None,
+         seed: None | int | np.random._generator.Generator = None,
          tolerance:float = 1e-6, 
          max_iter:int = 1000,
          disp: bool = True,

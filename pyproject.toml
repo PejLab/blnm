@@ -1,3 +1,29 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "blnm"
+version = "0.0.1dev1"
+description = "blnm : sample and fit mixture of binomial logit normal"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Robert Vogel" },
+    { name = "Pejman Mohammadi" },
+]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.21",
+    "scipy>=1.0",
+]
+
+[project.optional-dependencies]
+examples = ["matplotlib"]
+
+[project.urls]
+Homepage = "https://github.com/PejLab/blnm"
+
+[tool.setuptools]
+packages = ["blnm"]

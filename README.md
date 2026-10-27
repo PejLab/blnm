@@ -3,7 +3,19 @@
 
 # Binomial-Logit-Normal Mixture Model
 
+## Installation
 
+Requires Python 3.10 or later.
+
+```sh
+pip install git+https://github.com/PejLab/blnm
+```
+
+To also install matplotlib, which the example scripts use for plotting:
+
+```sh
+pip install "blnm[examples] @ git+https://github.com/PejLab/blnm"
+```
 
 ## Example
 

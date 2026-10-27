@@ -34,10 +34,10 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies on ${{ matrix.os }}
+      - name: Install blnm on ${{ matrix.os }}
         run: |
           python -m pip install --upgrade pip
-          python -m pip install numpy scipy
+          python -m pip install .
       - name: Run unittest
         run: |
           python -m unittest

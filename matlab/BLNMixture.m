@@ -242,6 +242,15 @@ classdef BLNMixture
                     end
                     prevLL = LL;
                 end
+                % The last M-step moved the parameters past the last E-step;
+                % recompute so that LL and resp match mu, sigma, pi.
+                logpk = BLNMixture.comp_loglik_matrix(X, Xc, logC, mu, sigma, xh, wh);
+                logR  = [bsxfun(@plus, logpk, log(max(pi(:).', realmin))), logU + log(max(w0, realmin))];
+                [logNorm, ~] = BLNMixture.logsumexp(logR, 2);
+                resp    = exp(bsxfun(@minus, logR, logNorm));
+                LL      = sum(logNorm);
+                respBLN = resp(:,1:K);
+                respUNI = resp(:,K+1);
                 elapsed = toc(tStart);
 
                 if LL > bestLL
@@ -285,9 +294,9 @@ classdef BLNMixture
             logBLNmix = BLNMixture.logsumexp(bsxfun(@plus, logpk, logPi), 2); % N x 1
             % add uniform
             logU = -log(n + 1);
-            logwBLN = log(max(1 - this.uniform_weight, realmin));
+            % pi already sums to 1 - uniform_weight, so no extra (1 - w0) factor
             logwU   = log(max(this.uniform_weight, realmin));
-            logp = BLNMixture.logsumexp([logwBLN + logBLNmix, logwU + logU], 2);
+            logp = BLNMixture.logsumexp([logBLNmix, logwU + logU], 2);
             if returnLog
                 p = logp;
             else

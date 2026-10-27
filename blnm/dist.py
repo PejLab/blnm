@@ -83,9 +83,9 @@ def sample_blnm(coefs, means, variance, n_counts, n_samples, rng=None):
         # sample mixture component
         k = get_mixture_component_from_prob(coefs, rng.uniform())
 
-        alt_counts[i] = sample_bln(means[k], 
+        alt_counts[i] = sample_bln(means[k],
                             variance, n_counts, 1, 
-                            rng=rng)
+                            rng=rng)[0]
 
     return alt_counts
 

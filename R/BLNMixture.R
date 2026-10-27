@@ -357,6 +357,14 @@ bln_mixture_fit <- function(X, Xc, K,
       }
       prevLL <- LL
     }
+    # The last M-step moved the parameters past the last E-step;
+    # recompute so that LL and resp match mu, sigma, pi.
+    logpk <- .comp_loglik_matrix(X, Xc, logC, mu, sigma, nodes, weights)
+    logR <- cbind(sweep(logpk, 2L, log(pmax(pi, .machine_realmin)), "+"),
+                  -log(n + 1) + log(max(w0, .machine_realmin)))
+    logNorm <- .row_logsumexp(logR)
+    resp <- exp(sweep(logR, 1L, logNorm, "-"))
+    LL <- sum(logNorm)
     elapsed <- proc.time()[3L] - start_time
     if (LL > bestLL) {
       bestLL <- LL
@@ -403,9 +411,9 @@ bln_mixture_pdf <- function(object, x, n, log = FALSE) {
   logPi <- log(pmax(object$pi, .machine_realmin))
   logBLN <- .row_logsumexp(sweep(logpk, 2L, logPi, "+"))
   logU <- -log(n + 1)
-  logwBLN <- log(max(1 - object$uniform_weight, .machine_realmin))
+  # pi already sums to 1 - uniform_weight, so no extra (1 - w0) factor
   logwU <- log(max(object$uniform_weight, .machine_realmin))
-  logp <- .row_logsumexp(cbind(logwBLN + logBLN, logwU + logU))
+  logp <- .row_logsumexp(cbind(logBLN, logwU + logU))
   if (log) {
     logp
   } else {

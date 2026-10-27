@@ -120,7 +120,7 @@ fig.savefig("pmf.png")
 
 ## BLN mixture with per-component variance and uniform noise
 
-`blnm.mixture.BLNMixture` is a Python port of Pejman Mohammadi's MATLAB
+`blnm.mixture.BLNMixture` is a Python port of the MATLAB
 `BLNMixture` class (`matlab/`; an R port is in `R/`, with a vignette in
 `vignettes/`).  Compared with `blnm.fit.blnm` it
 
@@ -137,6 +137,7 @@ fitted.mu, fitted.sigma, fitted.pi, fitted.labels
 ```
 
 Here `x` and `xc` are the counts of the two outcomes, so `n = x + xc`.  Labels
-run from 1 to K, and K + 1 marks the uniform component.  See
+run from 1 to K, and K + 1 marks the uniform component.  Note that `fitted.pi`
+sums to `1 - uniform_weight`, not 1.  See
 `example/demo_bln_mixture.py` for a full example.
 

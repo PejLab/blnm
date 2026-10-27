@@ -4,3 +4,7 @@
 *__pycache__/
 *egg-info/
 env/
+R/plots/
+vignettes/*_cache/
+vignettes/*_files/
+vignettes/*.html

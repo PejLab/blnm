@@ -1,0 +1,206 @@
+---
+title: "BLNMixture: Binomial-Logit-Normal Mixture Modeling in R"
+output:
+  html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{BLNMixture: Binomial-Logit-Normal Mixture Modeling in R}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+## Introduction
+
+This vignette documents the R port of the MATLAB `BLNMixture` class. The implementation models binomial counts using a mixture of Binomial-Logit-Normal (BLN) components with an optional fixed-weight uniform noise channel. A shortened demonstration mirrors the MATLAB workflow: simulate counts, fit the mixture via expectation–maximization (EM), evaluate likelihoods, and visualize results.
+
+The core implementation lives in `R/BLNMixture.R`; a fully worked example with extended diagnostics is available in `R/BLNMixture_Demo.R`. This vignette highlights the main APIs and provides reproducible examples for package-style documentation.
+
+## Installation & Setup
+
+The source files have no dependencies beyond base R and the `stats` package. When integrating into a package, list them in `Depends` or `Imports` as needed.
+
+To follow along, source the implementation:
+
+```{r source}
+source("../R/BLNMixture.R")
+```
+
+## Model Overview
+
+For each observation with total count \(n_i\) and successes \(x_i\), the mixture likelihood is
+
+\[
+p(x_i \mid \theta) = (1 - w_0) \sum_{k=1}^K \pi_k \, \mathrm{BLN}_k(x_i \mid n_i; \mu_k, \sigma_k) + w_0 \cdot \frac{1}{n_i + 1},
+\]
+
+where the BLN component integrates a binomial pmf over a logit-normal distribution of success probabilities:
+
+\[
+\mathrm{BLN}(x \mid n; \mu, \sigma) = \int_0^1 \binom{n}{x} p^x (1-p)^{n-x} \, \mathcal{N}\bigl(\operatorname{logit}(p) \mid \mu, \sigma^2\bigr) \, \mathrm{d}p.
+\]
+
+The integral is approximated using Gauss–Hermite quadrature with `quad_nodes` points.
+
+## Fitting a Mixture
+
+The main entry point is `bln_mixture_fit`.
+
+```{r fit, cache = TRUE}
+set.seed(42)
+N <- 500
+n <- sample(25:100, N, replace = TRUE)
+true_params <- list(
+  K = 2L,
+  mu = c(-0.4, 0.9),
+  sigma = c(0.25, 0.20),
+  uniform_weight = 5e-3,
+  pi = (1 - 5e-3) * c(0.45, 0.55),
+  QuadNodes = 30L
+)
+class(true_params) <- "BLNMixture"
+sim <- bln_mixture_rnd(true_params, n)
+fit <- bln_mixture_fit(
+  X = sim$x,
+  Xc = sim$xc,
+  K = 2,
+  uniform_weight = 5e-3,
+  restarts = 2,
+  display = "off"
+)
+fit$mu
+```
+
+The result is an object of class `"BLNMixture"` containing component parameters, responsibilities, and diagnostics:
+
+```{r glance}
+fit$loglik
+fit$iters
+fit$converged
+head(fit$labels)
+```
+
+## Evaluating the Mixture
+
+Use `bln_mixture_pdf` to compute pmf or log-pmf values on arbitrary counts.
+
+```{r pdf}
+pmf_values <- bln_mixture_pdf(fit, x = sim$x, n = n)
+logpmf_values <- bln_mixture_pdf(fit, x = sim$x, n = n, log = TRUE)
+range(pmf_values)
+```
+
+The log-pmf can be aggregated for scoring or model comparison; for example:
+
+```{r loglik}
+mean(logpmf_values)
+```
+
+## Simulation from the Fitted Model
+
+The `bln_mixture_rnd` function also accepts fitted objects, enabling posterior predictive checks or synthetic data generation:
+
+```{r simulate_fit}
+sim_fit <- bln_mixture_rnd(fit, n = n)
+table(sim_fit$z)
+```
+
+The labels (`z`) use `1..K` for BLN components and `K+1` for the uniform tail.
+
+## Shared Sigma Variant
+
+Setting `shared_sigma = TRUE` constrains all components to share a common variance. This can improve stability on small datasets or when components have similar dispersion.
+
+```{r shared-sigma}
+fit_shared <- bln_mixture_fit(
+  X = sim$x,
+  Xc = sim$xc,
+  K = 2,
+  uniform_weight = 5e-3,
+  shared_sigma = TRUE,
+  restarts = 2,
+  display = "off"
+)
+fit_shared$sigma
+```
+
+## Diagnostic Plots
+
+The demonstration script (`R/BLNMixture_Demo.R`) produces several visualizations. In a package setting you can expose convenience functions or reproduce the key plots inline. Below we illustrate two simple diagnostics.
+
+### Observed Fraction vs. MAP Label
+
+```{r plot_fraction, fig.height = 4.5}
+phat <- sim$x / n
+plot(
+  phat, fit$labels,
+  pch = 19, col = "steelblue",
+  xlab = "Observed fraction x/n",
+  ylab = "MAP component",
+  main = "BLN mixture: MAP labels"
+)
+grid()
+```
+
+### Component Parameter Comparison
+
+```{r plot_params, fig.height = 4.5}
+par(mfrow = c(1, 2))
+plot(true_params$mu, fit$mu,
+     xlab = "True mu", ylab = "Estimated mu",
+     pch = 19, col = "firebrick",
+     main = "Component means")
+abline(0, 1, lty = 2)
+plot(true_params$sigma, fit$sigma,
+     xlab = "True sigma", ylab = "Estimated sigma",
+     pch = 19, col = "darkgreen",
+     main = "Component sigmas")
+abline(0, 1, lty = 2)
+par(mfrow = c(1, 1))
+```
+
+For richer diagnostics—including binomial count overlays and shared-sigma comparisons—run the included demo script directly.
+
+## Customization Notes
+
+- **Uniform probability mass**: Adjust `uniform_weight` to match the expected prevalence of outliers or noise.
+- **Quadrature accuracy**: Increase `quad_nodes` for tighter numerical integration when components have narrow variances; expect higher computational cost.
+- **Initialization**: Supply an `init` list with fields `mu`, `sigma`, `pi` to seed EM from specific values. Scalars for `sigma` are supported when `shared_sigma = TRUE`.
+- **Optimizer control**: Set `use_bfgs = FALSE` to switch to Nelder–Mead (derivative-free) updates per component.
+- **Restarts**: Raise `restarts` for multi-modal likelihoods; the best log-likelihood is retained automatically.
+
+## Troubleshooting
+
+- **Non-finite or negative counts**: The fitter drops observations failing the constraints; ensure inputs are clean.
+- **Numerical instability**: Extremely large or small logits can arise if the data poorly support a component. `shared_sigma` helps regularize; you can also tighten or loosen `tol` and `max_iter`.
+- **Performance**: Cached Gauss–Hermite nodes reuse quadrature nodes across calls. Reuse fitted objects when evaluating multiple datasets.
+
+## Reproducing the Full Demo
+
+To replicate the extended example (complete with diagnostic plots written to disk):
+
+```r
+Rscript R/BLNMixture_Demo.R
+```
+
+This script generates the figures in `plots/` and prints convergence diagnostics for both free and shared sigma fits.
+
+## Further Work
+
+- Wrap the functions into a formal R package (`DESCRIPTION`, `NAMESPACE`, roxygen2 documentation).
+- Add unit tests for PDF values, EM convergence, and simulation routines.
+- Extend the API with helper functions for posterior responsibilities or model selection (e.g., AIC/ BIC).
+
+## Session Information
+
+```{r session-info}
+sessionInfo()
+```
